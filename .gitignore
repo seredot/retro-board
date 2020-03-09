@@ -15,3 +15,5 @@
 # vendor/
 board
 tmp/runner-build
+
+.DS_store
