@@ -1,0 +1,257 @@
+{
+	"info": {
+		"_postman_id": "0f2846ca-6ec5-4273-b042-ce8d6179ae18",
+		"name": "Retro Board",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "48e5ce85-d858-4d3b-bfb3-4725fdcddbaa",
+						"exec": [
+							"pm.environment.set(\"boardId\", pm.response.json().id);",
+							"pm.environment.set(\"version\", pm.response.json().version);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/api",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"api"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Board",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "6e217c28-b3dd-46a1-80ab-38605e1a539e",
+						"exec": [
+							"pm.environment.set(\"boardId\", pm.response.json().id);",
+							"pm.environment.set(\"version\", pm.response.json().version);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/api/board",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"board"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Board",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "48e5ce85-d858-4d3b-bfb3-4725fdcddbaa",
+						"exec": [
+							"pm.environment.set(\"boardId\", pm.response.json().id);",
+							"pm.environment.set(\"version\", pm.response.json().version);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/api/board/{{boardId}}",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"board",
+						"{{boardId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Item",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2a03b9fd-307f-4699-846c-c214e31c7189",
+						"exec": [
+							"pm.environment.set(\"itemId\", pm.response.json().id);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"This is an item\",\n    \"color\": \"blue\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/api/board/{{boardId}}/item",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"board",
+						"{{boardId}}",
+						"item"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Item",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"This is an updated item\",\n    \"color\": \"green\",\n    \"left\": 10,\n    \"top\": 10,\n    \"width\": 100,\n    \"height\": 100\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/api/board/{{boardId}}/item/{{itemId}}",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"board",
+						"{{boardId}}",
+						"item",
+						"{{itemId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Board Updates",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "496e9b1b-4dda-4551-abb5-2805f62c6398",
+						"exec": [
+							"pm.environment.set(\"boardId\", pm.response.json().id);",
+							"pm.environment.set(\"version\", pm.response.json().version);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8080/api/board/{{boardId}}/updates/{{version}}",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"board",
+						"{{boardId}}",
+						"updates",
+						"{{version}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
