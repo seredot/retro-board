@@ -123,7 +123,69 @@ func TestCreateItem(t *testing.T) {
 	}
 
 	checkStatusOK(t, rr.Code)
+	assert.Equal(t, item.Text, "foo")
 	assert.Greater(t, len(item.Id), 0)
+}
+
+func TestUpdateItem(t *testing.T) {
+	// First, create a board.
+	req, err := http.NewRequest("POST", "/api/board", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router := setupRouter()
+	rr := callHandler(router, req)
+
+	var created Board
+	err = json.Unmarshal(rr.Body.Bytes(), &created)
+	if err != nil {
+		t.Errorf("unable to parse response: %s", err)
+	}
+
+	checkStatusOK(t, rr.Code)
+	boardId := created.Id
+
+	// Create an item on the board.
+	body := strings.NewReader(`{"text": "foo"}`)
+	req, err = http.NewRequest("POST", fmt.Sprintf("/api/board/%s/item", boardId), body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = callHandler(router, req)
+
+	var item Item
+	err = json.Unmarshal(rr.Body.Bytes(), &item)
+	if err != nil {
+		t.Errorf("unable to parse response: %s", err)
+	}
+
+	itemId := item.Id
+
+	checkStatusOK(t, rr.Code)
+	assert.Equal(t, item.Text, "foo")
+	assert.Greater(t, len(itemId), 0)
+
+	// Update the item.
+	body = strings.NewReader(`{"text": "bar"}`)
+	req, err = http.NewRequest("PUT", fmt.Sprintf("/api/board/%s/item/%s", boardId, itemId), body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = callHandler(router, req)
+
+	err = json.Unmarshal(rr.Body.Bytes(), &item)
+	if err != nil {
+		t.Errorf("unable to parse response: %s", err)
+	}
+
+	updatedId := item.Id
+
+	checkStatusOK(t, rr.Code)
+	assert.Equal(t, item.Text, "bar")
+	assert.Equal(t, updatedId, itemId)
 }
 
 // Helpers
