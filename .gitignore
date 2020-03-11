@@ -13,7 +13,7 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-board
+retro-board
 tmp/runner-build
 
 .DS_store
