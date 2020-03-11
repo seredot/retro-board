@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Repo is an in-memory repository.
+// Repo is an in-memory data store.
 type Repo struct {
 	boards map[string]*Board
 }
@@ -62,7 +62,7 @@ func (r *Repo) GetBoardUpdates(b *Board, version uint64) {
 
 // CreateItem creates a new item.
 func (r *Repo) CreateItem(boardId string, item *Item) (*Item, error) {
-	b, err := repo.GetBoard(boardId)
+	b, err := r.GetBoard(boardId)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (r *Repo) CreateItem(boardId string, item *Item) (*Item, error) {
 	b.Items[retItem.Id] = &retItem
 
 	// Notify listeners.
-	repo.UpdateBoard(b, &retItem)
+	r.UpdateBoard(b, &retItem)
 
 	return &retItem, nil
 }
@@ -88,13 +88,13 @@ func (r *Repo) GetItem(b *Board, itemId string) (*Item, error) {
 // UpdateItem updates an existing item.
 func (r *Repo) UpdateItem(boardId string, itemId string, item *Item) (*Item, error) {
 	// Find the board
-	b, err := repo.GetBoard(boardId)
+	b, err := r.GetBoard(boardId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the existing item.
-	oItem, err := repo.GetItem(b, itemId)
+	oItem, err := r.GetItem(b, itemId)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (r *Repo) UpdateItem(boardId string, itemId string, item *Item) (*Item, err
 	oItem.Id = itemId
 
 	// Notify listeners.
-	repo.UpdateBoard(b, oItem)
+	r.UpdateBoard(b, oItem)
 
 	return oItem, nil
 }

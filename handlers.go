@@ -9,33 +9,50 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type handler struct {
+	repo *Repo
+}
+
+type Handler interface {
+	healthCheck(w http.ResponseWriter, r *http.Request)
+	createBoard(w http.ResponseWriter, r *http.Request)
+	getBoard(w http.ResponseWriter, r *http.Request)
+	createItem(w http.ResponseWriter, r *http.Request)
+	updateItem(w http.ResponseWriter, r *http.Request)
+	getBoardUpdates(w http.ResponseWriter, r *http.Request)
+}
+
+func newHandler(r *Repo) Handler {
+	return &handler{repo: r}
+}
+
 // writeError returns an error for the response.
 func writeError(w http.ResponseWriter, err error) {
 	w.WriteHeader(400)
 	json.NewEncoder(w).Encode(ErrorResponse{Error: err.Error()})
 }
 
-// handleHealthCheck returns a health check message
-func handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+// healthCheck returns a health check message
+func (h *handler) healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(HealthCheck{Status: "ok"})
 }
 
-// handleCreateBoard creates a new board and returns the newly created board.
-func handleCreateBoard(w http.ResponseWriter, r *http.Request) {
+// createBoard creates a new board and returns the newly created board.
+func (h *handler) createBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	b := repo.CreateBoard()
+	b := h.repo.CreateBoard()
 	json.NewEncoder(w).Encode(b)
 }
 
-// handleGetBoard returns a board with the specified id.
-func handleGetBoard(w http.ResponseWriter, r *http.Request) {
+// getBoard returns a board with the specified id.
+func (h *handler) getBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id := mux.Vars(r)["board-id"]
 
-	b, err := repo.GetBoard(id)
+	b, err := h.repo.GetBoard(id)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -43,14 +60,14 @@ func handleGetBoard(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(b)
 }
 
-// handleCreateItem creates a new item for the specified board using the item info in body.
-func handleCreateItem(w http.ResponseWriter, r *http.Request) {
+// createItem creates a new item for the specified board using the item info in body.
+func (h *handler) createItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	boardId := mux.Vars(r)["board-id"]
 	var item = Item{}
 	json.NewDecoder(r.Body).Decode(&item)
 
-	retItem, err := repo.CreateItem(boardId, &item)
+	retItem, err := h.repo.CreateItem(boardId, &item)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -58,8 +75,8 @@ func handleCreateItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(retItem)
 }
 
-// handleUpdateItem updates an item in specified board id and item id using item info in body.
-func handleUpdateItem(w http.ResponseWriter, r *http.Request) {
+// updateItem updates an item in specified board id and item id using item info in body.
+func (h *handler) updateItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	boardId := mux.Vars(r)["board-id"]
 	itemId := mux.Vars(r)["item-id"]
@@ -67,7 +84,7 @@ func handleUpdateItem(w http.ResponseWriter, r *http.Request) {
 	item := Item{}
 	json.NewDecoder(r.Body).Decode(&item)
 
-	retItem, err := repo.UpdateItem(boardId, itemId, &item)
+	retItem, err := h.repo.UpdateItem(boardId, itemId, &item)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -75,11 +92,11 @@ func handleUpdateItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(retItem)
 }
 
-// handleGetBoardUpdates long polls for the changes in specified board id.
+// getBoardUpdates long polls for the changes in specified board id.
 // Returns a board object with changed items.
 // If no changes happen after an amount of time, returns the board object
 // with an empty items array.
-func handleGetBoardUpdates(w http.ResponseWriter, r *http.Request) {
+func (h *handler) getBoardUpdates(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id := mux.Vars(r)["board-id"]
 	sVersion := mux.Vars(r)["version"]
@@ -92,14 +109,14 @@ func handleGetBoardUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Does the board exist?
-	b, err := repo.GetBoard(id)
+	b, err := h.repo.GetBoard(id)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 
 	// Poll for changes on the board.
-	repo.GetBoardUpdates(b, version)
+	h.repo.GetBoardUpdates(b, version)
 
 	json.NewEncoder(w).Encode(b)
 }

@@ -7,18 +7,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var repo = Repo{}
-
 func main() {
+	repo := &Repo{}
 	repo.Init()
 
+	handler := newHandler(repo)
+
 	r := mux.NewRouter()
-	r.HandleFunc("/api", handleHealthCheck).Methods("GET")
-	r.HandleFunc("/api/board", handleCreateBoard).Methods("POST")
-	r.HandleFunc("/api/board/{board-id}", handleGetBoard).Methods("GET")
-	r.HandleFunc("/api/board/{board-id}/item", handleCreateItem).Methods("POST")
-	r.HandleFunc("/api/board/{board-id}/item/{item-id}", handleUpdateItem).Methods("PUT")
-	r.HandleFunc("/api/board/{board-id}/updates/{version}", handleGetBoardUpdates).Methods("GET")
+	r.HandleFunc("/api", handler.healthCheck).Methods("GET")
+	r.HandleFunc("/api/board", handler.createBoard).Methods("POST")
+	r.HandleFunc("/api/board/{board-id}", handler.getBoard).Methods("GET")
+	r.HandleFunc("/api/board/{board-id}/item", handler.createItem).Methods("POST")
+	r.HandleFunc("/api/board/{board-id}/item/{item-id}", handler.updateItem).Methods("PUT")
+	r.HandleFunc("/api/board/{board-id}/updates/{version}", handler.getBoardUpdates).Methods("GET")
 	log.Println("Running server")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
