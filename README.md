@@ -7,6 +7,11 @@ Backend for real time retro board project.
 go build ./... && ./retro-board
 ```
 
+## Running tests
+```
+go test -v
+```
+
 ## Endpoints
 ### Api health check
 ```bsh

@@ -29,6 +29,7 @@ func newHandler(r *Repo) Handler {
 // writeError returns an error for the response.
 func writeError(w http.ResponseWriter, err error) {
 	w.WriteHeader(400)
+
 	json.NewEncoder(w).Encode(ErrorResponse{Error: err.Error()})
 }
 
@@ -65,7 +66,17 @@ func (h *handler) createItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	boardId := mux.Vars(r)["board-id"]
 	var item = Item{}
-	json.NewDecoder(r.Body).Decode(&item)
+
+	if r.Body == nil {
+		writeError(w, errors.New("Missing input error"))
+		return
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&item)
+	if err != nil {
+		writeError(w, errors.New("Parse error"))
+		return
+	}
 
 	retItem, err := h.repo.CreateItem(boardId, &item)
 	if err != nil {
