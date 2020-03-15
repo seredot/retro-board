@@ -199,17 +199,12 @@ func callHandler(router *mux.Router, req *http.Request) *httptest.ResponseRecord
 }
 
 func setupRouter() *mux.Router {
-	repo := &Repo{}
-	setInitialState(repo)
+	repo := NewMemoryRepo()
 
 	r := mux.NewRouter()
-	mapHandlerFuncs(r, newHandler(repo))
+	mapHandlerFuncs(r, NewHandler(repo))
 
 	return r
-}
-
-func setInitialState(repo *Repo) {
-	repo.Init()
 }
 
 func checkStatusOK(t *testing.T, code int) {

@@ -8,15 +8,13 @@ import (
 )
 
 func main() {
-	repo := &Repo{}
-	repo.Init()
-
-	handler := newHandler(repo)
-	r := mux.NewRouter()
-	mapHandlerFuncs(r, handler)
+	repo := NewMemoryRepo()
+	handler := NewHandler(repo)
+	router := mux.NewRouter()
+	mapHandlerFuncs(router, handler)
 
 	log.Println("Running server")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func mapHandlerFuncs(r *mux.Router, handler Handler) {

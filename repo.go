@@ -8,18 +8,32 @@ import (
 	"github.com/google/uuid"
 )
 
-// Repo is an in-memory data store.
-type Repo struct {
+// Repo interface.
+type Repo interface {
+	CreateBoard() *Board
+	GetBoard(id string) (*Board, error)
+	UpdateBoard(b *Board, it *Item)
+	GetBoardUpdates(b *Board, version uint64)
+	CreateItem(boardId string, item *Item) (*Item, error)
+	GetItem(b *Board, itemId string) (*Item, error)
+	UpdateItem(boardId string, itemId string, item *Item) (*Item, error)
+}
+
+// memoryRepo is an in-memory data store.
+type memoryRepo struct {
 	boards map[string]*Board
 }
 
-// Init initializes the repo.
-func (r *Repo) Init() {
+// NewMemoryRepo initializes the repo.
+func NewMemoryRepo() Repo {
+	r := memoryRepo{}
 	r.boards = make(map[string]*Board)
+
+	return &r
 }
 
 // CreateBoard creates a new board.
-func (r *Repo) CreateBoard() *Board {
+func (r *memoryRepo) CreateBoard() *Board {
 	id := uuid.New().String()
 	b := &Board{
 		Id:      id,
@@ -32,7 +46,7 @@ func (r *Repo) CreateBoard() *Board {
 }
 
 // GetBoard gets a board.
-func (r *Repo) GetBoard(id string) (*Board, error) {
+func (r *memoryRepo) GetBoard(id string) (*Board, error) {
 	b := r.boards[id]
 	if b == nil {
 		return nil, errors.New("board_not_found")
@@ -41,7 +55,7 @@ func (r *Repo) GetBoard(id string) (*Board, error) {
 }
 
 // UpdateBoard updates the board version and broadcasts the update to listeners.
-func (r *Repo) UpdateBoard(b *Board, it *Item) {
+func (r *memoryRepo) UpdateBoard(b *Board, it *Item) {
 	// Update board version.
 	v := atomic.AddUint64(&b.Version, 1)
 
@@ -54,14 +68,14 @@ func (r *Repo) UpdateBoard(b *Board, it *Item) {
 	b.Cond.Broadcast()
 }
 
-func (r *Repo) GetBoardUpdates(b *Board, version uint64) {
+func (r *memoryRepo) GetBoardUpdates(b *Board, version uint64) {
 	b.Cond.L.Lock()
 	b.Cond.Wait()
 	b.Cond.L.Unlock()
 }
 
 // CreateItem creates a new item.
-func (r *Repo) CreateItem(boardId string, item *Item) (*Item, error) {
+func (r *memoryRepo) CreateItem(boardId string, item *Item) (*Item, error) {
 	b, err := r.GetBoard(boardId)
 	if err != nil {
 		return nil, err
@@ -77,7 +91,7 @@ func (r *Repo) CreateItem(boardId string, item *Item) (*Item, error) {
 }
 
 // GetItem gets an item.
-func (r *Repo) GetItem(b *Board, itemId string) (*Item, error) {
+func (r *memoryRepo) GetItem(b *Board, itemId string) (*Item, error) {
 	item, ok := b.Items[itemId]
 	if !ok {
 		return nil, errors.New("item_not_found")
@@ -86,7 +100,7 @@ func (r *Repo) GetItem(b *Board, itemId string) (*Item, error) {
 }
 
 // UpdateItem updates an existing item.
-func (r *Repo) UpdateItem(boardId string, itemId string, item *Item) (*Item, error) {
+func (r *memoryRepo) UpdateItem(boardId string, itemId string, item *Item) (*Item, error) {
 	// Find the board
 	b, err := r.GetBoard(boardId)
 	if err != nil {

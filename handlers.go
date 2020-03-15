@@ -10,7 +10,7 @@ import (
 )
 
 type handler struct {
-	repo *Repo
+	repo Repo
 }
 
 type Handler interface {
@@ -22,7 +22,7 @@ type Handler interface {
 	getBoardUpdates(w http.ResponseWriter, r *http.Request)
 }
 
-func newHandler(r *Repo) Handler {
+func NewHandler(r Repo) Handler {
 	return &handler{repo: r}
 }
 
