@@ -56,7 +56,7 @@ func (r *memoryRepo) GetBoard(id string) (*Board, error) {
 
 // UpdateBoard updates the board version and broadcasts the update to listeners.
 func (r *memoryRepo) UpdateBoard(b *Board, it *Item) {
-	// Update board version.
+	// Increment the board version.
 	v := atomic.AddUint64(&b.Version, 1)
 
 	// Update item version.
@@ -111,6 +111,10 @@ func (r *memoryRepo) UpdateItem(boardId string, itemId string, item *Item) (*Ite
 	oItem, err := r.GetItem(b, itemId)
 	if err != nil {
 		return nil, err
+	}
+
+	if item == nil {
+		return nil, errors.New("input_error")
 	}
 
 	// Copy data from received item.
