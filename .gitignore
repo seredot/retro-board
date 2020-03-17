@@ -16,4 +16,7 @@
 retro-board
 tmp/runner-build
 
+# vscode files
+launch.json
+
 .DS_store

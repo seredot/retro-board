@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,18 +15,26 @@ import (
 func TestHandlerHealthCheck(t *testing.T) {
 	var repo = &RepoMock{}
 
+	expected := &HealthCheck{Status: "ok"}
+
 	req, _ := http.NewRequest("GET", "/api", nil)
 	h := http.HandlerFunc(NewHandler(repo).healthCheck)
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	assert.Equal(t, "{\"status\":\"ok\"}\n", rr.Body.String())
+	checkResultJson(t, expected, rr.Body.Bytes(), &HealthCheck{})
 	repo.AssertExpectations(t)
 }
 
 func TestHandlerCreateBoard(t *testing.T) {
 	var repo = &RepoMock{}
+
+	expected := &Board{
+		Id:      "board_id",
+		Items:   make(map[string]*Item),
+		Version: 0,
+	}
 
 	repo.On("CreateBoard").Return(&Board{
 		Id:      "board_id",
@@ -39,12 +48,18 @@ func TestHandlerCreateBoard(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	assert.Equal(t, "{\"id\":\"board_id\",\"items\":{},\"version\":0}\n", rr.Body.String())
+	checkResultJson(t, expected, rr.Body.Bytes(), &Board{})
 	repo.AssertExpectations(t)
 }
 
 func TestHandlerGetBoard(t *testing.T) {
 	var repo = &RepoMock{}
+
+	expected := &Board{
+		Id:      "board_id",
+		Items:   make(map[string]*Item),
+		Version: 0,
+	}
 
 	repo.On("GetBoard", "board_id").Return(&Board{
 		Id:      "board_id",
@@ -61,12 +76,22 @@ func TestHandlerGetBoard(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	assert.Equal(t, "{\"id\":\"board_id\",\"items\":{},\"version\":0}\n", rr.Body.String())
+	checkResultJson(t, expected, rr.Body.Bytes(), &Board{})
 	repo.AssertExpectations(t)
 }
 
 func TestHandlerCreateItem(t *testing.T) {
 	var repo = &RepoMock{}
+
+	expected := &Item{
+		Id:     "item_id",
+		Text:   "This is an item",
+		Color:  "blue",
+		Left:   0,
+		Top:    0,
+		Width:  0,
+		Height: 0,
+	}
 
 	repo.On("CreateItem", "board_id", mock.Anything).Return(&Item{
 		Id:     "item_id",
@@ -92,12 +117,22 @@ func TestHandlerCreateItem(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	assert.Equal(t, "{\"id\":\"item_id\",\"text\":\"This is an item\",\"color\":\"blue\",\"left\":0,\"top\":0,\"width\":0,\"height\":0}\n", rr.Body.String())
+	checkResultJson(t, expected, rr.Body.Bytes(), &Item{})
 	repo.AssertExpectations(t)
 }
 
 func TestHandlerUpdateItem(t *testing.T) {
 	var repo = &RepoMock{}
+
+	expected := &Item{
+		Id:     "item_id",
+		Text:   "This is an updated item",
+		Color:  "green",
+		Left:   10,
+		Top:    10,
+		Width:  100,
+		Height: 100,
+	}
 
 	repo.On("UpdateItem", "board_id", "item_id", mock.Anything).Return(&Item{
 		Id:     "item_id",
@@ -129,12 +164,18 @@ func TestHandlerUpdateItem(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	assert.Equal(t, "{\"id\":\"item_id\",\"text\":\"This is an updated item\",\"color\":\"green\",\"left\":10,\"top\":10,\"width\":100,\"height\":100}\n", rr.Body.String())
+	checkResultJson(t, expected, rr.Body.Bytes(), &Item{})
 	repo.AssertExpectations(t)
 }
 
 func TestHandlerGetBoardUpdates(t *testing.T) {
 	var repo = &RepoMock{}
+
+	expected := &Board{
+		Id:      "board_id",
+		Items:   make(map[string]*Item),
+		Version: 0,
+	}
 
 	repo.On("GetBoard", "board_id").Return(&Board{
 		Id:      "board_id",
@@ -154,6 +195,13 @@ func TestHandlerGetBoardUpdates(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	assert.Equal(t, "{\"id\":\"board_id\",\"items\":{},\"version\":0}\n", rr.Body.String())
+	checkResultJson(t, expected, rr.Body.Bytes(), &Board{})
 	repo.AssertExpectations(t)
+}
+
+func checkResultJson(t *testing.T, expected interface{}, bytes []byte, v interface{}) {
+	err := json.Unmarshal(bytes, v)
+
+	assert.NoError(t, err, "Error parsing JSON result.")
+	assert.Equal(t, expected, v)
 }
