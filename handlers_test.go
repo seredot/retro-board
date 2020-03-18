@@ -1,14 +1,13 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -23,7 +22,7 @@ func TestHandlerHealthCheck(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	checkResultJson(t, expected, rr.Body.Bytes(), &HealthCheck{})
+	checkResultJSON(t, expected, rr.Body.Bytes(), &HealthCheck{})
 	repo.AssertExpectations(t)
 }
 
@@ -36,11 +35,13 @@ func TestHandlerCreateBoard(t *testing.T) {
 		Version: 0,
 	}
 
-	repo.On("CreateBoard").Return(&Board{
-		Id:      "board_id",
-		Items:   make(map[string]*Item),
-		Version: 0,
-	}, nil).Once()
+	repo.
+		On("CreateBoard").
+		Return(&Board{
+			Id:      "board_id",
+			Items:   make(map[string]*Item),
+			Version: 0,
+		}, nil).Once()
 
 	req, _ := http.NewRequest("POST", "/api/board", nil)
 	h := http.HandlerFunc(NewHandler(repo).createBoard)
@@ -48,7 +49,7 @@ func TestHandlerCreateBoard(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	checkResultJson(t, expected, rr.Body.Bytes(), &Board{})
+	checkResultJSON(t, expected, rr.Body.Bytes(), &Board{})
 	repo.AssertExpectations(t)
 }
 
@@ -61,11 +62,13 @@ func TestHandlerGetBoard(t *testing.T) {
 		Version: 0,
 	}
 
-	repo.On("GetBoard", "board_id").Return(&Board{
-		Id:      "board_id",
-		Items:   make(map[string]*Item),
-		Version: 0,
-	}, nil).Once()
+	repo.
+		On("GetBoard", "board_id").
+		Return(&Board{
+			Id:      "board_id",
+			Items:   make(map[string]*Item),
+			Version: 0,
+		}, nil).Once()
 
 	req, _ := http.NewRequest("GET", "/api/board/board_id", nil)
 	req = mux.SetURLVars(req, map[string]string{
@@ -76,7 +79,32 @@ func TestHandlerGetBoard(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	checkResultJson(t, expected, rr.Body.Bytes(), &Board{})
+	checkResultJSON(t, expected, rr.Body.Bytes(), &Board{})
+	repo.AssertExpectations(t)
+}
+
+func TestHandlerGetBoardError(t *testing.T) {
+	var repo = &RepoMock{}
+	var nilBoard *Board
+
+	expected := &ErrorResponse{
+		Error: "board_not_found",
+	}
+
+	repo.
+		On("GetBoard", "not_existing_board_id").
+		Return(nilBoard, errors.New("board_not_found")).Once()
+
+	req, _ := http.NewRequest("GET", "/api/board/board_id", nil)
+	req = mux.SetURLVars(req, map[string]string{
+		"board-id": "not_existing_board_id",
+	})
+	h := http.HandlerFunc(NewHandler(repo).getBoard)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
 	repo.AssertExpectations(t)
 }
 
@@ -117,7 +145,67 @@ func TestHandlerCreateItem(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	checkResultJson(t, expected, rr.Body.Bytes(), &Item{})
+	checkResultJSON(t, expected, rr.Body.Bytes(), &Item{})
+	repo.AssertExpectations(t)
+}
+
+func TestHandlerCreateItemInputError(t *testing.T) {
+	var repo = &RepoMock{}
+
+	expected := &ErrorResponse{
+		Error: "Missing input error",
+	}
+
+	req, _ := http.NewRequest("POST", "/api/board/board_id/item", nil)
+	h := http.HandlerFunc(NewHandler(repo).createItem)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
+	repo.AssertExpectations(t)
+}
+
+func TestHandlerCreateItemParseError(t *testing.T) {
+	var repo = &RepoMock{}
+
+	expected := &ErrorResponse{
+		Error: "Parse error",
+	}
+
+	req, _ := http.NewRequest("POST", "/api/board/board_id/item", strings.NewReader("invalid: json"))
+	h := http.HandlerFunc(NewHandler(repo).createItem)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
+	repo.AssertExpectations(t)
+}
+
+func TestHandlerCreateItemNotFoundBoardError(t *testing.T) {
+	var repo = &RepoMock{}
+
+	expected := &ErrorResponse{
+		Error: "board_not_found",
+	}
+
+	repo.
+		On("CreateItem", mock.Anything, mock.Anything).
+		Return(&Item{}, errors.New("board_not_found")).
+		Once()
+
+	req, _ := http.NewRequest(
+		"POST",
+		"/api/board/not_found_board_id/item",
+		strings.NewReader("{}"),
+	)
+	h := http.HandlerFunc(NewHandler(repo).createItem)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
 	repo.AssertExpectations(t)
 }
 
@@ -164,7 +252,33 @@ func TestHandlerUpdateItem(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	checkResultJson(t, expected, rr.Body.Bytes(), &Item{})
+	checkResultJSON(t, expected, rr.Body.Bytes(), &Item{})
+	repo.AssertExpectations(t)
+}
+
+func TestHandlerUpdateItemNotFoundBoardError(t *testing.T) {
+	var repo = &RepoMock{}
+
+	expected := &ErrorResponse{
+		Error: "board_not_found",
+	}
+
+	repo.
+		On("UpdateItem", mock.Anything, mock.Anything, mock.Anything).
+		Return(&Item{}, errors.New("board_not_found")).
+		Once()
+
+	req, _ := http.NewRequest(
+		"POST",
+		"/api/board/not_found_board_id/item",
+		strings.NewReader("{}"),
+	)
+	h := http.HandlerFunc(NewHandler(repo).updateItem)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
 	repo.AssertExpectations(t)
 }
 
@@ -195,13 +309,52 @@ func TestHandlerGetBoardUpdates(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	checkStatusOK(t, rr.Code)
-	checkResultJson(t, expected, rr.Body.Bytes(), &Board{})
+	checkResultJSON(t, expected, rr.Body.Bytes(), &Board{})
 	repo.AssertExpectations(t)
 }
 
-func checkResultJson(t *testing.T, expected interface{}, bytes []byte, v interface{}) {
-	err := json.Unmarshal(bytes, v)
+func TestHandlerGetBoardUpdatesInputError(t *testing.T) {
+	var repo = &RepoMock{}
 
-	assert.NoError(t, err, "Error parsing JSON result.")
-	assert.Equal(t, expected, v)
+	expected := &ErrorResponse{
+		Error: "invalid_argument_version",
+	}
+
+	req, _ := http.NewRequest("GET", "/api/board/board_id/updates/K0", nil)
+	req = mux.SetURLVars(req, map[string]string{
+		"version": "K0",
+	})
+	h := http.HandlerFunc(NewHandler(repo).getBoardUpdates)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
+	repo.AssertExpectations(t)
+}
+
+func TestHandlerGetBoardUpdatesNotFoundBoardError(t *testing.T) {
+	var repo = &RepoMock{}
+	var nilBoard *Board
+
+	expected := &ErrorResponse{
+		Error: "board_not_found",
+	}
+
+	repo.
+		On("GetBoard", "not_existing_board_id").
+		Return(nilBoard, errors.New("board_not_found")).Once()
+
+	req, _ := http.NewRequest("GET", "/api/board/not_existing_board_id/updates/0", nil)
+	req = mux.SetURLVars(req, map[string]string{
+		"board-id": "not_existing_board_id",
+		"version":  "0",
+	})
+	h := http.HandlerFunc(NewHandler(repo).getBoardUpdates)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	checkStatusNotOK(t, rr.Code)
+	checkResultJSON(t, expected, rr.Body.Bytes(), &ErrorResponse{})
+	repo.AssertExpectations(t)
 }

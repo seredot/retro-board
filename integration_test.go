@@ -206,9 +206,3 @@ func setupRouter() *mux.Router {
 
 	return r
 }
-
-func checkStatusOK(t *testing.T, code int) {
-	if code != http.StatusOK {
-		t.Errorf("handler returned status code: %d", code)
-	}
-}
