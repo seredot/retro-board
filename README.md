@@ -9,7 +9,7 @@ go build ./... && ./retro-board
 
 ## Running tests
 ```
-go test -v
+go test ./... -v
 ```
 
 ## Endpoints

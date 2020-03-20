@@ -13,7 +13,7 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-retro-board
+/retro-board
 tmp/runner-build
 
 # vscode files

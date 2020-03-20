@@ -162,15 +162,19 @@ func TestRepoUpdateItem(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, result, updated)
 
-	notFound, err := r.UpdateItem("not_existing_board_id", updated.Id, updateInput)
-	assert.Error(t, err)
-	assert.Nil(t, notFound)
+	errorCases := []struct {
+		BoardId string
+		ItemId  string
+		Item    *Item
+	}{
+		{BoardId: "not_existing_board_id", ItemId: updated.Id, Item: updateInput},
+		{BoardId: b.Id, ItemId: "not_existing_item_id", Item: updateInput},
+		{BoardId: b.Id, ItemId: updated.Id, Item: nil},
+	}
 
-	notFound, err = r.UpdateItem(b.Id, "not_existing_item_id", updateInput)
-	assert.Error(t, err)
-	assert.Nil(t, notFound)
-
-	notFound, err = r.UpdateItem(b.Id, updated.Id, nil)
-	assert.Error(t, err)
-	assert.Nil(t, notFound)
+	for _, errorCase := range errorCases {
+		notFound, err := r.UpdateItem(errorCase.BoardId, errorCase.ItemId, errorCase.Item)
+		assert.Error(t, err)
+		assert.Nil(t, notFound)
+	}
 }
