@@ -178,3 +178,47 @@ func TestRepoUpdateItem(t *testing.T) {
 		assert.Nil(t, notFound)
 	}
 }
+
+func TestRepoUpdateItemErrors(t *testing.T) {
+	createInput := &Item{
+		Id:      "",
+		Version: 0,
+		Color:   "red",
+		Text:    "foo",
+		Left:    0,
+		Top:     1,
+		Width:   2,
+		Height:  3,
+	}
+
+	updateInput := &Item{
+		Id:      "",
+		Version: 1,
+		Color:   "green",
+		Text:    "bar",
+		Left:    4,
+		Top:     5,
+		Width:   6,
+		Height:  7,
+	}
+
+	r := NewMemoryRepo()
+	b := r.CreateBoard()
+	created, _ := r.CreateItem(b.Id, createInput)
+
+	errorCases := []struct {
+		BoardId string
+		ItemId  string
+		Item    *Item
+	}{
+		{BoardId: "not_existing_board_id", ItemId: created.Id, Item: updateInput},
+		{BoardId: b.Id, ItemId: "not_existing_item_id", Item: updateInput},
+		{BoardId: b.Id, ItemId: created.Id, Item: nil},
+	}
+
+	for _, errorCase := range errorCases {
+		notFound, err := r.UpdateItem(errorCase.BoardId, errorCase.ItemId, errorCase.Item)
+		assert.Error(t, err)
+		assert.Nil(t, notFound)
+	}
+}
